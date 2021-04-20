@@ -3821,6 +3821,25 @@ class VMGalleryImage(ScenarioTest):
         self.cmd('sig image-definition delete -g {rg} --gallery-name {gallery} --gallery-image-definition {image}')
         self.cmd('sig delete -g {rg} --gallery-name {gallery}')
 
+    @ResourceGroupPreparer(name_prefix='cli_test_gallery_image_version_vhd')
+    def test_gallery_image_version_vhd(self, resource_group):
+        self.kwargs.update({
+            'gallery': self.create_random_name(prefix='gallery_', length=20),
+        })
+
+        self.cmd('vm create -g {rg} -n vm1 --image centos --use-unmanaged-disk --nsg-rule NONE --generate-ssh-key')
+        vhd_uri = self.cmd('vm show -g {rg} -n vm1').get_output_in_json()['storageProfile']['osDisk']['vhd']['uri']
+        storage_account = vhd_uri.split('.')[0].split('/')[-1]
+        self.kwargs.update({
+            'vhd': vhd_uri,
+            'stac': storage_account
+        })
+        self.cmd('sig create -g {rg} --gallery-name {gallery}')
+        self.cmd('sig image-definition create -g {rg} --gallery-name {gallery} --gallery-image-definition image1 --os-type linux -p publisher1 -f offer1 -s sku1')
+        self.cmd('sig image-version create -g {rg} --gallery-name {gallery} --gallery-image-definition image1 --gallery-image-version 1.0.0 --os-vhd-uri {vhd} --os-vhd-storage-account {stac} --replica-count 1', checks=[
+            self.check('storageProfile.osDiskImage.source.uri', vhd_uri)
+        ])
+
     @ResourceGroupPreparer(name_prefix='cli_test_gallery_specialized_', location='eastus2')
     def test_gallery_specialized(self, resource_group):
         self.kwargs.update({
@@ -5155,12 +5174,16 @@ class VMTrustedLaunchScenarioTest(ScenarioTest):
 
 
 class VMCreateCountScenarioTest(ScenarioTest):
-    @ResourceGroupPreparer(name_prefix='cli_test_vm_create_count_')
+    @ResourceGroupPreparer(name_prefix='cli_test_vm_create_count_', location='eastus')
     def test_vm_create_count(self, resource_group):
-        self.cmd('vm create -g {rg} -n vm --image centos --count 3 --nsg-rule None --generate-ssh-keys')
-        self.cmd('vm show -g {rg} -n vm0')
-        self.cmd('vm show -g {rg} -n vm1')
-        self.cmd('vm show -g {rg} -n vm2')
+        self.cmd('az network vnet create -g {rg} -n vnet --address-prefix 10.0.0.0/16')
+        self.cmd('az network vnet subnet create -g {rg} --vnet-name vnet -n subnet1 --address-prefixes 10.0.0.0/24')
+        self.cmd('az network vnet subnet create -g {rg} --vnet-name vnet -n subnet2 --address-prefixes 10.0.1.0/24')
+        self.cmd('vm create -g {rg} -n vma --image ubuntults --count 3 --vnet-name vnet --subnet subnet1 --nsg-rule None --generate-ssh-keys')
+        self.cmd('vm create -g {rg} -n vmb --image ubuntults --count 3 --vnet-name vnet --subnet subnet2 --nsg-rule None --generate-ssh-keys')
+        self.cmd('vm list -g {rg}', checks=[
+            self.check('length(@)', 6)
+        ])
 
 
 class ExtendedLocation(ScenarioTest):

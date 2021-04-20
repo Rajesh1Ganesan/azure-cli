@@ -145,7 +145,7 @@ AZURE_API_PROFILES = {
             'snapshots': '2020-12-01',
             'galleries': '2019-12-01',
             'gallery_images': '2020-09-30',
-            'gallery_image_versions': '2019-12-01',
+            'gallery_image_versions': '2020-09-30',
             'virtual_machine_scale_sets': '2020-12-01'
         }),
         ResourceType.MGMT_RESOURCE_FEATURES: '2015-12-01',
@@ -332,6 +332,19 @@ AZURE_API_PROFILES = {
         ResourceType.DATA_STORAGE_FILEDATALAKE: '2015-04-05',
         ResourceType.DATA_STORAGE_FILESHARE: '2015-04-05',
         ResourceType.DATA_STORAGE_QUEUE: '2015-04-05'
+    }
+}
+
+
+# We should avoid using ad hoc API versions,
+# use the version in a profile as much as possible.
+AD_HOC_API_VERSIONS = {
+    ResourceType.MGMT_NETWORK: {
+        'vm_default_target_network': '2018-01-01',
+        'nw_connection_monitor': '2019-06-01',
+        'container_network': '2018-08-01',
+        'appservice_network': '2020-04-01',
+        'appservice_ensure_subnet': '2019-02-01'
     }
 }
 
